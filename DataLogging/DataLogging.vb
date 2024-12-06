@@ -100,7 +100,7 @@ Public Class DataLogging
     End Sub
 
     Sub StoreData(prefix As String, data As Byte())
-        Dim filename As String = $"log_{DateTime.Now.ToString("yyMMddhh")}.log"
+        Dim filename As String = $"..\..\log_{DateTime.Now.ToString("yyMMddhh")}.log"
 
         FileOpen(1, filename, OpenMode.Append)
         Write(1, $"$${prefix}")

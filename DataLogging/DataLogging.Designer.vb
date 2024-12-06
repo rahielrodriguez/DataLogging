@@ -130,12 +130,11 @@ Partial Class DataLogging
         'SampleRateTrackBar
         '
         Me.SampleRateTrackBar.Location = New System.Drawing.Point(6, 37)
-        Me.SampleRateTrackBar.Maximum = 100
         Me.SampleRateTrackBar.Minimum = 1
         Me.SampleRateTrackBar.Name = "SampleRateTrackBar"
         Me.SampleRateTrackBar.Size = New System.Drawing.Size(319, 56)
         Me.SampleRateTrackBar.TabIndex = 9
-        Me.SampleRateTrackBar.Value = 100
+        Me.SampleRateTrackBar.Value = 10
         '
         'MinSampleLabel
         '
@@ -151,9 +150,9 @@ Partial Class DataLogging
         Me.MaxSampleLabel.AutoSize = True
         Me.MaxSampleLabel.Location = New System.Drawing.Point(231, 18)
         Me.MaxSampleLabel.Name = "MaxSampleLabel"
-        Me.MaxSampleLabel.Size = New System.Drawing.Size(94, 16)
+        Me.MaxSampleLabel.Size = New System.Drawing.Size(87, 16)
         Me.MaxSampleLabel.TabIndex = 11
-        Me.MaxSampleLabel.Text = "100 samples/s"
+        Me.MaxSampleLabel.Text = "10 samples/s"
         '
         'Timer1
         '
