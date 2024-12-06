@@ -35,7 +35,7 @@ Partial Class DataLogging
         Me.SampleRateTrackBar = New System.Windows.Forms.TrackBar()
         Me.MinSampleLabel = New System.Windows.Forms.Label()
         Me.MaxSampleLabel = New System.Windows.Forms.Label()
-        Me.Timer = New System.Windows.Forms.Timer(Me.components)
+        Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.ToolTip = New System.Windows.Forms.ToolTip(Me.components)
         Me.MenuStrip1 = New System.Windows.Forms.MenuStrip()
         Me.FileToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
@@ -46,6 +46,7 @@ Partial Class DataLogging
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.CurrentSampleRateLabel = New System.Windows.Forms.Label()
         Me.PortComboBox = New System.Windows.Forms.ComboBox()
+        Me.Timer2 = New System.Windows.Forms.Timer(Me.components)
         Me.GroupBox1.SuspendLayout()
         CType(Me.LogPictureBox, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.SampleRateTrackBar, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -134,7 +135,7 @@ Partial Class DataLogging
         Me.SampleRateTrackBar.Name = "SampleRateTrackBar"
         Me.SampleRateTrackBar.Size = New System.Drawing.Size(319, 56)
         Me.SampleRateTrackBar.TabIndex = 9
-        Me.SampleRateTrackBar.Value = 10
+        Me.SampleRateTrackBar.Value = 100
         '
         'MinSampleLabel
         '
@@ -154,9 +155,9 @@ Partial Class DataLogging
         Me.MaxSampleLabel.TabIndex = 11
         Me.MaxSampleLabel.Text = "100 samples/s"
         '
-        'Timer
+        'Timer1
         '
-        Me.Timer.Interval = 10
+        Me.Timer1.Interval = 10
         '
         'MenuStrip1
         '
@@ -233,6 +234,10 @@ Partial Class DataLogging
         Me.PortComboBox.Size = New System.Drawing.Size(292, 24)
         Me.PortComboBox.TabIndex = 15
         '
+        'Timer2
+        '
+        Me.Timer2.Interval = 1000
+        '
         'DataLogging
         '
         Me.AcceptButton = Me.LogButton
@@ -272,7 +277,7 @@ Partial Class DataLogging
     Friend WithEvents SampleRateTrackBar As TrackBar
     Friend WithEvents MinSampleLabel As Label
     Friend WithEvents MaxSampleLabel As Label
-    Friend WithEvents Timer As Timer
+    Friend WithEvents Timer1 As Timer
     Friend WithEvents ToolTip As ToolTip
     Friend WithEvents MenuStrip1 As MenuStrip
     Friend WithEvents FileToolStripMenuItem As ToolStripMenuItem
@@ -284,4 +289,5 @@ Partial Class DataLogging
     Friend WithEvents CurrentSampleRateLabel As Label
     Friend WithEvents ComButton As Button
     Friend WithEvents PortComboBox As ComboBox
+    Friend WithEvents Timer2 As Timer
 End Class

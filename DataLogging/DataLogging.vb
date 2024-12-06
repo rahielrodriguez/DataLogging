@@ -7,77 +7,95 @@ Imports System.Runtime.InteropServices
 Public Class DataLogging
 
     Dim dataQ As New Queue
+    Dim xMax% = 1000, yMax% = 255
+    Dim sx! = 2, sy! = 2
+    Dim sampleCount As Integer
+
+    Function GetBackColor(Optional newBackColor As Color = Nothing) As Color
+        Static _backColor As Color
+        If newBackColor <> Nothing Then
+            _backColor = newBackColor
+        End If
+        Return _backColor
+    End Function
+    Function GetForeColor(Optional newForeColor As Color = Nothing) As Color
+        Static _foreColor As Color
+        If newForeColor <> Nothing Then
+            _foreColor = newForeColor
+        End If
+        Return _foreColor
+    End Function
+
     Sub SetDefaults()
-        LogPictureBox.BackColor = Color.Black
-        SampleRateTrackBar.Value = 10
-        SampleRateTrackBar.Minimum = 1
-        SampleRateTrackBar.Maximum = 100
+        LogPictureBox.BackColor = GetBackColor(Color.Black)
+        GetForeColor(Color.Lime)
+        xMax = (SampleRateTrackBar.Value * 30)
+
+        sx = CSng(LogPictureBox.Width / xMax)
+        sy = CSng(LogPictureBox.Height / yMax)
     End Sub
 
     Sub Updategraph()
-        Dim plotdata(100) As Integer
-        LogPictureBox.Refresh()
+        Dim plotdata(dataQ.Count - 1) As Integer
+        Dim qTrack As Integer = dataQ.Count
+        ' LogPictureBox.Refresh()
         dataQ.CopyTo(plotdata, 0)
         Plot(plotdata)
 
     End Sub
     Sub Plot(plotData() As Integer)
         Dim g As Graphics = LogPictureBox.CreateGraphics
-        Dim pen As New Pen(Color.Lime)
+        Dim pen As New Pen(GetForeColor())
         Dim oldX%, oldY%
-        g.ScaleTransform(CSng(LogPictureBox.Width / (255 + 30)), CSng(LogPictureBox.Height / 255))
-        g.TranslateTransform(0, 255)
-        oldY = plotData(0)
+        Dim y As Integer
+        'g.ScaleTransform(CSng(LogPictureBox.Width / Me.xMax), CSng(LogPictureBox.Height / Me.yMax))
+        g.ScaleTransform(Me.sx, Me.sy)
+        g.TranslateTransform(0, Me.yMax)
+        'pen.Width = 2
+        'oldY = plotData(0)
         For x = 0 To UBound(plotData) - 1
-            g.DrawLine(pen, oldX, oldY, x, plotData(x) * -1)
+            y = plotData(x) * -1
+            pen.Color = GetBackColor(Color.Black)
+            pen.Width = 2
+            g.DrawLine(pen, x, 0, x, -LogPictureBox.Height)
+            pen.Color = GetForeColor(Color.Lime)
+            pen.Width = 1
+            g.DrawLine(pen, oldX, oldY, x, y)
+            If Math.Abs(oldY - y) > 21 Then
+                Console.WriteLine()
+            End If
             oldX = x
-            oldY = plotData(x) * -1
+            oldY = y
         Next
 
     End Sub
     Sub GetNewData()
-        Dim newData As Integer
-        Dim coinToss As Integer
+        Dim newData As Integer = RandomNumberFrom()
+        Dim coinToss As Integer = RandomNumberFrom()
         Static lastData As Integer
         Dim data(1) As Byte
 
-        Try
-            Qy_ReadAnalogInPutA1()
+        'new data may be posative or negative
+        If coinToss >= 5 Then
+            newData = newData * -1
+        End If
 
-            Sleep(5)
-            Console.WriteLine(SerialPort.BytesToRead)
-            Dim qyBoardData(SerialPort.BytesToRead) As Byte
-            SerialPort.Read(qyBoardData, 0, SerialPort.BytesToRead)
+        lastData += newData
+        If lastData > 255 Then
+            lastData = 255
+        ElseIf lastData < 0 Then
+            lastData = 0
+        End If
 
-            Console.WriteLine($"High: {Hex(qyBoardData(0))} | Jelly Beans: {qyBoardData(0)}")
-            Console.WriteLine($"Low: {Hex(qyBoardData(1))}")
+        Me.dataQ.Enqueue(lastData)
+        data(0) = CByte(lastData)
 
-            newData = qyBoardData(0)
+        StoreData("RND", data)
 
-            'new data may be posative or negative
-            If coinToss >= 5 Then
-                newData = newData * -1
-            End If
-
-            lastData += newData
-            If lastData > 255 Then
-                lastData = 255
-            ElseIf lastData < 0 Then
-                lastData = 0
-            End If
-
-            Me.dataQ.Enqueue(lastData)
-            data(0) = CByte(lastData)
-
-            StoreData("RND", data)
-
-            'this keeps the queue limited to size of 100
-            If Me.dataQ.Count > 100 Then
-                Me.dataQ.Dequeue()
-            End If
-        Catch ex As Exception
-
-        End Try
+        'this keeps the queue limited to size of xMax
+        If Me.dataQ.Count > Me.xMax Then
+            Me.dataQ.Dequeue()
+        End If
 
     End Sub
 
@@ -91,7 +109,7 @@ Public Class DataLogging
         WriteLine(1, $"{DateTime.Now.ToString("yyMMddhhmmss")}{DateTime.Now.Millisecond}")
 
         FileClose(1)
-
+        FileStatusLabel.Text = $"{filename}"
     End Sub
 
     ''' <summary>
@@ -112,50 +130,21 @@ Public Class DataLogging
         _random = CInt(Math.Floor(Rnd() * (max + 1 - min))) + min
         Return _random
     End Function
-    Function Qy_ReadAnalogInPutA1() As Byte()
-        Try
-            Dim data(0) As Byte
-            data(0) = &B1010001
-            SerialPort.Write(data, 0, 1)
-            Return data
-        Catch ex As Exception
 
-        End Try
-
-    End Function
-    Sub SerialConnect(portName As String)
-        SerialPort.Close()
-        SerialPort.PortName = portName
-        SerialPort.BaudRate = 9600
-        SerialPort.Open()
-    End Sub
-    Sub GetPorts()
-        'add all available ports to the port combobox
-        PortComboBox.Items.Clear()
-        For Each s As String In SerialPort.GetPortNames()
-            PortComboBox.Items.Add($"{s}")
-        Next
-
-        PortComboBox.SelectedIndex = 0
-    End Sub
-    Private Sub ComButton_Click(sender As Object, e As EventArgs) Handles ComButton.Click
-        GetPorts()
-    End Sub
-    Private Sub PortComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles PortComboBox.SelectedIndexChanged
-        SerialConnect($"{PortComboBox.SelectedItem}")
-    End Sub
-
-    ' Events below here ---------------------------------------------------------------
+    'Events below here ---------------------------------------------------------------
     Private Sub LoggingForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         SetDefaults()
-        For i = 0 To 100
+        For i = 0 To xMax
             GetNewData()
         Next
-        GetPorts()
-
+        Timer1.Interval = CInt(1000 / SampleRateTrackBar.Value)
     End Sub
 
-    'Private Sub OpenToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles OpenFileToolStripMenuItem.Click
+    Private Sub ExitToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StopButton.Click
+        Me.Close()
+    End Sub
+
+    'Private Sub OpenToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles OpenToolStripMenuItem.Click
     '    'filter only for .log files with all files optional
     '    OpenFileDialog.Filter = "Log Files (*.log)|*.log|All Files (*.*)|*.*"
     '    OpenFileDialog.FileName = ""
@@ -170,27 +159,48 @@ Public Class DataLogging
     '    SaveFileDialog.ShowDialog()
     'End Sub
 
-
     Private Sub LogButton_Click(sender As Object, e As EventArgs) Handles LogButton.Click
 
-        If Timer.Enabled Then
-            Timer.Enabled = False
+        If Timer1.Enabled Then
+            Timer1.Enabled = False
+            Timer2.Enabled = False
         Else
-            Timer.Enabled = True
+            Timer1.Enabled = True
+            Timer2.Enabled = True
+            Timer1.Start()
+            Timer2.Start()
         End If
     End Sub
 
-    Private Sub Timer_Tick(sender As Object, e As EventArgs) Handles Timer.Tick
-        GetNewData()
-        Updategraph()
-
-    End Sub
-    Private Sub StopButton_Click(sender As Object, e As EventArgs) Handles StopButton.Click
-        Me.Close()
-    End Sub
-
     Private Sub SampleRateTrackBar_Scroll(sender As Object, e As EventArgs) Handles SampleRateTrackBar.Scroll
-        Timer.Interval = CInt(1000 / SampleRateTrackBar.Value)
+        Dim plotdata(Me.xMax - 1) As Integer
+        Timer1.Stop()
+        Timer1.Interval = CInt(1000 / SampleRateTrackBar.Value)
         CurrentSampleRateLabel.Text = $"{SampleRateTrackBar.Value} samples / sec"
+        xMax = (SampleRateTrackBar.Value * 30)
+        dataQ.Clear()
+        For i = 0 To xMax
+            Me.dataQ.Enqueue(0)
+        Next
+        SetDefaults()
+        LogPictureBox.Refresh()
+        Timer1.Start()
+    End Sub
+
+    Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
+        Updategraph()
+        Me.Text = $"XMax = {xMax}, Timer = {Me.Timer1.Interval}, Queue = {dataQ.Count}, Samples = {sampleCount}"
+        sampleCount = 0
+    End Sub
+
+    Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
+        GetNewData()
+        sampleCount += 1
+        'Me.Text = $"XMax = {xMax}, Timer = {Me.Timer1.Interval}, Queue = {dataQ.Count}"
+    End Sub
+
+    Private Sub LogPictureBox_Resize(sender As Object, e As EventArgs) Handles LogPictureBox.Resize
+
+        LogPictureBox.Refresh()
     End Sub
 End Class
