@@ -1,16 +1,51 @@
-﻿Option Strict On
+﻿'Rahiel Rodriguez
+'RCET 3371
+'Fall 2024
+'Data Logger
+'https://github.com/rahielrodriguez/DataLogging.git
+
+Option Strict On
 Option Explicit On
 Imports System.IO.Ports
 Imports System.Threading.Thread
 Imports System.Windows.Forms.ComponentModel.Com2Interop
 Imports System.Runtime.InteropServices
+Imports System.Runtime.Remoting.Lifetime
+
 Public Class DataLogging
 
+    ' Queue to hold incoming data
     Dim dataQ As New Queue
-    Dim xMax% = 1000, yMax% = 255
-    Dim sx! = 2, sy! = 2
-    Dim sampleCount As Integer
+    Dim xMax% = 1000, yMax% = 255 ' Maximum values for x (time) and y (data) axes
+    Dim sx! = 2, sy! = 2 ' Scaling factors for plotting
+    Dim sampleCount As Integer ' Counter for the number of samples
+    Dim fileDataList As New List(Of String) ' List to store data read from a file
 
+    ' Connects to a serial port with the specified name
+    Sub SerialConnect(portName As String)
+        SerialPort.Close()
+        SerialPort.PortName = portName
+        SerialPort.BaudRate = 9600
+        SerialPort.Open()
+    End Sub
+
+    ' Populates the PortComboBox with available COM ports
+    Sub GetPorts()
+        PortComboBox.Items.Clear()
+        For Each s As String In SerialPort.GetPortNames()
+            PortComboBox.Items.Add($"{s}")
+        Next
+        PortComboBox.SelectedIndex = 0
+    End Sub
+
+    ' Sends a command to read analog input A1 from the QY@ board
+    Sub Qy_ReadAnalogInPutA1()
+        Dim data(0) As Byte
+        data(0) = &B1010001 ' Command byte
+        SerialPort.Write(data, 0, 1)
+    End Sub
+
+    ' Gets or sets the background color for the LogPictureBox
     Function GetBackColor(Optional newBackColor As Color = Nothing) As Color
         Static _backColor As Color
         If newBackColor <> Nothing Then
@@ -18,6 +53,8 @@ Public Class DataLogging
         End If
         Return _backColor
     End Function
+
+    ' Gets or sets the foreground color for the graph lines
     Function GetForeColor(Optional newForeColor As Color = Nothing) As Color
         Static _foreColor As Color
         If newForeColor <> Nothing Then
@@ -26,141 +63,141 @@ Public Class DataLogging
         Return _foreColor
     End Function
 
+    ' Initializes default settings for the graph and controls
     Sub SetDefaults()
         LogPictureBox.BackColor = GetBackColor(Color.Black)
         GetForeColor(Color.Lime)
-        xMax = (SampleRateTrackBar.Value * 30)
 
-        sx = CSng(LogPictureBox.Width / xMax)
-        sy = CSng(LogPictureBox.Height / yMax)
+        If RadioButton30Seconds.Checked Then
+            xMax = (SampleRateTrackBar.Value * 30)
+        ElseIf AllDataRadioButton.Checked Then
+            xMax = 36000
+        Else
+            xMax = (SampleRateTrackBar.Value * 30)
+        End If
+
+        sx = CSng(LogPictureBox.Width / xMax) ' Scaling x-axis
+        sy = CSng(LogPictureBox.Height / yMax) ' Scaling y-axis
     End Sub
 
+    ' Updates the graph by plotting the data in the queue
     Sub Updategraph()
         Dim plotdata(dataQ.Count - 1) As Integer
         Dim qTrack As Integer = dataQ.Count
-        ' LogPictureBox.Refresh()
         dataQ.CopyTo(plotdata, 0)
         Plot(plotdata)
-
     End Sub
+
+    ' Plots the given data array on the graph
     Sub Plot(plotData() As Integer)
         Dim g As Graphics = LogPictureBox.CreateGraphics
         Dim pen As New Pen(GetForeColor())
         Dim oldX%, oldY%
-        Dim y As Integer
-        'g.ScaleTransform(CSng(LogPictureBox.Width / Me.xMax), CSng(LogPictureBox.Height / Me.yMax))
+
         g.ScaleTransform(Me.sx, Me.sy)
         g.TranslateTransform(0, Me.yMax)
-        'pen.Width = 2
-        'oldY = plotData(0)
+        oldY = plotData(0)
+
         For x = 0 To UBound(plotData) - 1
-            y = plotData(x) * -1
-            pen.Color = GetBackColor(Color.Black)
-            pen.Width = 2
-            g.DrawLine(pen, x, 0, x, -LogPictureBox.Height)
-            pen.Color = GetForeColor(Color.Lime)
+            pen.Color = GetBackColor()
+            pen.Width = 1.25
+            pen.Alignment = Drawing2D.PenAlignment.Outset
+            g.DrawLine(pen, x, 0, x, -Me.yMax) ' Clears previous line
+
+            pen.Color = GetForeColor()
             pen.Width = 1
-            g.DrawLine(pen, oldX, oldY, x, y)
-            If Math.Abs(oldY - y) > 21 Then
-                Console.WriteLine()
-            End If
+            pen.Alignment = Drawing2D.PenAlignment.Inset
+            g.DrawLine(pen, oldX, oldY, x, plotData(x) * -1) ' Draws new line
+
             oldX = x
-            oldY = y
+            oldY = plotData(x) * -1
         Next
-
     End Sub
+
+    ' Reads new data from either the serial port or a file
     Sub GetNewData()
-        Dim newData As Integer = RandomNumberFrom()
-        Dim coinToss As Integer = RandomNumberFrom()
-        Static lastData As Integer
+        Dim newData As Integer
         Dim data(1) As Byte
+        Dim temp() As String
+        Dim fileData As String
 
-        'new data may be posative or negative
-        If coinToss >= 5 Then
-            newData = newData * -1
+        If RadioButton30Seconds.Checked Then
+            Qy_ReadAnalogInPutA1()
+            Sleep(5)
+            Dim serialData(SerialPort.BytesToRead) As Byte
+            SerialPort.Read(serialData, 0, SerialPort.BytesToRead)
+
+            newData = CInt(serialData(0))
+            Me.dataQ.Enqueue(newData)
+            data(0) = CByte(newData)
+        ElseIf AllDataRadioButton.Checked Then
+            Try
+                FileOpen(1, $"{FileStatusLabel.Text}", OpenMode.Input)
+                Do Until EOF(1)
+                    fileData = LineInput(1)
+                    Me.fileDataList.Add($"{fileData}")
+                Loop
+                For Each item In fileDataList
+                    temp = Split(fileData, ",")
+                    newData = CInt(temp(1))
+                    Me.dataQ.Enqueue(newData)
+                    data(0) = CByte(newData)
+                Next
+                FileClose()
+            Catch ex As Exception
+                newData = 0
+                Me.Text = "Please Select a .log file to read"
+            End Try
         End If
 
-        lastData += newData
-        If lastData > 255 Then
-            lastData = 255
-        ElseIf lastData < 0 Then
-            lastData = 0
+        If RadioButton30Seconds.Checked Then
+            StoreData("AN1", data)
         End If
 
-        Me.dataQ.Enqueue(lastData)
-        data(0) = CByte(lastData)
-
-        StoreData("RND", data)
-
-        'this keeps the queue limited to size of xMax
+        ' Limits the size of the queue to xMax
         If Me.dataQ.Count > Me.xMax Then
             Me.dataQ.Dequeue()
         End If
-
     End Sub
 
+    ' Stores data in a log file with a timestamp
     Sub StoreData(prefix As String, data As Byte())
-        Dim filename As String = $"..\..\log_{DateTime.Now.ToString("yyMMddhh")}.log"
+        Dim filename As String = $"..\..\..\log_{DateTime.Now.ToString("yyMMddhh")}.log"
 
         FileOpen(1, filename, OpenMode.Append)
         Write(1, $"$${prefix}")
         Write(1, data(0))
         Write(1, data(1))
         WriteLine(1, $"{DateTime.Now.ToString("yyMMddhhmmss")}{DateTime.Now.Millisecond}")
-
         FileClose(1)
-        FileStatusLabel.Text = $"{filename}"
     End Sub
 
-    ''' <summary>
-    ''' returns an integer from min to max inclusive.
-    ''' <br/>
-    ''' defaults:
-    ''' <br/>
-    ''' min = 0
-    ''' <br/>
-    ''' max = 10
-    ''' </summary>
-    ''' <param name="min%"></param>
-    ''' <param name="max%"></param>
-    ''' <returns></returns>
-    Function RandomNumberFrom(Optional min% = 0, Optional max% = 10) As Integer
-        Dim _random%
-        Randomize(DateTime.Now.Millisecond)
-        _random = CInt(Math.Floor(Rnd() * (max + 1 - min))) + min
-        Return _random
-    End Function
-
-    'Events below here ---------------------------------------------------------------
+    ' Event triggered when the form loads
     Private Sub LoggingForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        SetDefaults()
+        GetPorts()
         For i = 0 To xMax
             GetNewData()
         Next
+        SetDefaults()
         Timer1.Interval = CInt(1000 / SampleRateTrackBar.Value)
+        FileStatusLabel.Text = ""
     End Sub
 
+    ' Event triggered to close the application
     Private Sub ExitToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles StopButton.Click
         Me.Close()
     End Sub
 
-    'Private Sub OpenToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles OpenToolStripMenuItem.Click
-    '    'filter only for .log files with all files optional
-    '    OpenFileDialog.Filter = "Log Files (*.log)|*.log|All Files (*.*)|*.*"
-    '    OpenFileDialog.FileName = ""
-    '    OpenFileDialog.ShowDialog()
-    '    FileStatusLabel.Text = OpenFileDialog.FileName 'TODO log file function
-    'End Sub
+    ' Event triggered to open a log file
+    Private Sub OpenToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles OpenFileToolStripMenuItem.Click
+        OpenFileDialog.Filter = "Log Files (*.log)|*.log|All Files (*.*)|*.*"
+        OpenFileDialog.FileName = ""
+        OpenFileDialog.ShowDialog()
+        FileStatusLabel.Text = OpenFileDialog.FileName
+    End Sub
 
-    'Private Sub SaveToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles SaveToolStripMenuItem.Click
-    '    'filter only for .log files with all files optional
-    '    SaveFileDialog.Filter = "Log Files (*.log)|*.log|All Files (*.*)|*.*"
-    '    SaveFileDialog.FileName = $"data_{DateTime.Now.ToString("yyMMddhh")}.log"
-    '    SaveFileDialog.ShowDialog()
-    'End Sub
-
+    ' Event triggered to start or stop logging
     Private Sub LogButton_Click(sender As Object, e As EventArgs) Handles LogButton.Click
-
         If Timer1.Enabled Then
             Timer1.Enabled = False
             Timer2.Enabled = False
@@ -172,12 +209,18 @@ Public Class DataLogging
         End If
     End Sub
 
+    ' Event triggered when the sample rate track bar is adjusted
     Private Sub SampleRateTrackBar_Scroll(sender As Object, e As EventArgs) Handles SampleRateTrackBar.Scroll
-        Dim plotdata(Me.xMax - 1) As Integer
         Timer1.Stop()
         Timer1.Interval = CInt(1000 / SampleRateTrackBar.Value)
         CurrentSampleRateLabel.Text = $"{SampleRateTrackBar.Value} samples / sec"
-        xMax = (SampleRateTrackBar.Value * 30)
+
+        If RadioButton30Seconds.Checked Then
+            xMax = (SampleRateTrackBar.Value * 30)
+        ElseIf AllDataRadioButton.Checked Then
+            xMax = 36000
+        End If
+
         dataQ.Clear()
         For i = 0 To xMax
             Me.dataQ.Enqueue(0)
@@ -187,20 +230,42 @@ Public Class DataLogging
         Timer1.Start()
     End Sub
 
+    ' Event triggered to update the graph on Timer2 tick
     Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
         Updategraph()
         Me.Text = $"XMax = {xMax}, Timer = {Me.Timer1.Interval}, Queue = {dataQ.Count}, Samples = {sampleCount}"
         sampleCount = 0
     End Sub
 
+    ' Event triggered to refresh the COM port list
+    Private Sub ComButton_Click(sender As Object, e As EventArgs) Handles ComButton.Click
+        GetPorts()
+    End Sub
+
+    ' Event triggered when a COM port is selected
+    Private Sub PortComboBox_SelectedIndexChanged(sender As Object, e As EventArgs) Handles PortComboBox.SelectedIndexChanged
+        SerialConnect($"{PortComboBox.SelectedItem}")
+    End Sub
+
+    ' Event triggered when "All Data" mode is selected
+    Private Sub AllDataRadioButton_CheckedChanged(sender As Object, e As EventArgs) Handles AllDataRadioButton.CheckedChanged
+        dataQ.Clear()
+    End Sub
+
+    ' Event triggered when "30 Seconds" mode is selected
+    Private Sub RadioButton30Seconds_CheckedChanged(sender As Object, e As EventArgs) Handles RadioButton30Seconds.CheckedChanged
+        dataQ.Clear()
+    End Sub
+
+    ' Event triggered to read new data on Timer1 tick
     Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
         GetNewData()
         sampleCount += 1
-        'Me.Text = $"XMax = {xMax}, Timer = {Me.Timer1.Interval}, Queue = {dataQ.Count}"
     End Sub
 
+    ' Event triggered when the LogPictureBox is resized
     Private Sub LogPictureBox_Resize(sender As Object, e As EventArgs) Handles LogPictureBox.Resize
-
         LogPictureBox.Refresh()
     End Sub
+
 End Class

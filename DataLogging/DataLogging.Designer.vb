@@ -26,7 +26,6 @@ Partial Class DataLogging
         Me.ContextMenuStrip = New System.Windows.Forms.ContextMenuStrip(Me.components)
         Me.LogButton = New System.Windows.Forms.Button()
         Me.StopButton = New System.Windows.Forms.Button()
-        Me.SaveButton = New System.Windows.Forms.Button()
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
         Me.ComButton = New System.Windows.Forms.Button()
         Me.LogPictureBox = New System.Windows.Forms.PictureBox()
@@ -39,14 +38,15 @@ Partial Class DataLogging
         Me.ToolTip = New System.Windows.Forms.ToolTip(Me.components)
         Me.MenuStrip1 = New System.Windows.Forms.MenuStrip()
         Me.FileToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.SaveToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.OpenFileToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
-        Me.SettingsToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.FileStatusLabel = New System.Windows.Forms.Label()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
         Me.CurrentSampleRateLabel = New System.Windows.Forms.Label()
         Me.PortComboBox = New System.Windows.Forms.ComboBox()
         Me.Timer2 = New System.Windows.Forms.Timer(Me.components)
+        Me.RadioButton30Seconds = New System.Windows.Forms.RadioButton()
+        Me.AllDataRadioButton = New System.Windows.Forms.RadioButton()
+        Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
         Me.GroupBox1.SuspendLayout()
         CType(Me.LogPictureBox, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.SampleRateTrackBar, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -79,30 +79,20 @@ Partial Class DataLogging
         Me.StopButton.Text = "Stop"
         Me.StopButton.UseVisualStyleBackColor = True
         '
-        'SaveButton
-        '
-        Me.SaveButton.Location = New System.Drawing.Point(298, 21)
-        Me.SaveButton.Name = "SaveButton"
-        Me.SaveButton.Size = New System.Drawing.Size(140, 72)
-        Me.SaveButton.TabIndex = 4
-        Me.SaveButton.Text = "&Save"
-        Me.SaveButton.UseVisualStyleBackColor = True
-        '
         'GroupBox1
         '
         Me.GroupBox1.Controls.Add(Me.ComButton)
-        Me.GroupBox1.Controls.Add(Me.SaveButton)
         Me.GroupBox1.Controls.Add(Me.LogButton)
         Me.GroupBox1.Controls.Add(Me.StopButton)
-        Me.GroupBox1.Location = New System.Drawing.Point(351, 359)
+        Me.GroupBox1.Location = New System.Drawing.Point(468, 359)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(591, 110)
+        Me.GroupBox1.Size = New System.Drawing.Size(462, 110)
         Me.GroupBox1.TabIndex = 5
         Me.GroupBox1.TabStop = False
         '
         'ComButton
         '
-        Me.ComButton.Location = New System.Drawing.Point(444, 21)
+        Me.ComButton.Location = New System.Drawing.Point(306, 21)
         Me.ComButton.Name = "ComButton"
         Me.ComButton.Size = New System.Drawing.Size(140, 72)
         Me.ComButton.TabIndex = 5
@@ -161,7 +151,7 @@ Partial Class DataLogging
         'MenuStrip1
         '
         Me.MenuStrip1.ImageScalingSize = New System.Drawing.Size(20, 20)
-        Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.FileToolStripMenuItem, Me.SettingsToolStripMenuItem})
+        Me.MenuStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.FileToolStripMenuItem})
         Me.MenuStrip1.Location = New System.Drawing.Point(0, 0)
         Me.MenuStrip1.Name = "MenuStrip1"
         Me.MenuStrip1.Size = New System.Drawing.Size(942, 28)
@@ -170,16 +160,10 @@ Partial Class DataLogging
         '
         'FileToolStripMenuItem
         '
-        Me.FileToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.SaveToolStripMenuItem, Me.OpenFileToolStripMenuItem})
+        Me.FileToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.OpenFileToolStripMenuItem})
         Me.FileToolStripMenuItem.Name = "FileToolStripMenuItem"
         Me.FileToolStripMenuItem.Size = New System.Drawing.Size(46, 24)
         Me.FileToolStripMenuItem.Text = "File"
-        '
-        'SaveToolStripMenuItem
-        '
-        Me.SaveToolStripMenuItem.Name = "SaveToolStripMenuItem"
-        Me.SaveToolStripMenuItem.Size = New System.Drawing.Size(155, 26)
-        Me.SaveToolStripMenuItem.Text = "&Save"
         '
         'OpenFileToolStripMenuItem
         '
@@ -187,17 +171,11 @@ Partial Class DataLogging
         Me.OpenFileToolStripMenuItem.Size = New System.Drawing.Size(155, 26)
         Me.OpenFileToolStripMenuItem.Text = "&Open File"
         '
-        'SettingsToolStripMenuItem
-        '
-        Me.SettingsToolStripMenuItem.Name = "SettingsToolStripMenuItem"
-        Me.SettingsToolStripMenuItem.Size = New System.Drawing.Size(76, 24)
-        Me.SettingsToolStripMenuItem.Text = "Settings"
-        '
         'FileStatusLabel
         '
         Me.FileStatusLabel.AutoEllipsis = True
         Me.FileStatusLabel.AutoSize = True
-        Me.FileStatusLabel.Location = New System.Drawing.Point(12, 449)
+        Me.FileStatusLabel.Location = New System.Drawing.Point(12, 471)
         Me.FileStatusLabel.Name = "FileStatusLabel"
         Me.FileStatusLabel.Size = New System.Drawing.Size(48, 16)
         Me.FileStatusLabel.TabIndex = 13
@@ -235,7 +213,32 @@ Partial Class DataLogging
         '
         'Timer2
         '
-        Me.Timer2.Interval = 1000
+        '
+        'RadioButton30Seconds
+        '
+        Me.RadioButton30Seconds.AutoSize = True
+        Me.RadioButton30Seconds.Checked = True
+        Me.RadioButton30Seconds.Location = New System.Drawing.Point(649, 333)
+        Me.RadioButton30Seconds.Name = "RadioButton30Seconds"
+        Me.RadioButton30Seconds.Size = New System.Drawing.Size(148, 20)
+        Me.RadioButton30Seconds.TabIndex = 16
+        Me.RadioButton30Seconds.TabStop = True
+        Me.RadioButton30Seconds.Text = "30 Seconds Display"
+        Me.RadioButton30Seconds.UseVisualStyleBackColor = True
+        '
+        'AllDataRadioButton
+        '
+        Me.AllDataRadioButton.AutoSize = True
+        Me.AllDataRadioButton.Location = New System.Drawing.Point(803, 333)
+        Me.AllDataRadioButton.Name = "AllDataRadioButton"
+        Me.AllDataRadioButton.Size = New System.Drawing.Size(124, 20)
+        Me.AllDataRadioButton.TabIndex = 17
+        Me.AllDataRadioButton.Text = "All Data Display"
+        Me.AllDataRadioButton.UseVisualStyleBackColor = True
+        '
+        'OpenFileDialog
+        '
+        Me.OpenFileDialog.FileName = "OpenFileDialog1"
         '
         'DataLogging
         '
@@ -243,7 +246,9 @@ Partial Class DataLogging
         Me.AutoScaleDimensions = New System.Drawing.SizeF(8.0!, 16.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.StopButton
-        Me.ClientSize = New System.Drawing.Size(942, 474)
+        Me.ClientSize = New System.Drawing.Size(942, 496)
+        Me.Controls.Add(Me.AllDataRadioButton)
+        Me.Controls.Add(Me.RadioButton30Seconds)
         Me.Controls.Add(Me.PortComboBox)
         Me.Controls.Add(Me.GroupBox2)
         Me.Controls.Add(Me.FileStatusLabel)
@@ -268,7 +273,6 @@ Partial Class DataLogging
     Friend WithEvents ContextMenuStrip As ContextMenuStrip
     Friend WithEvents LogButton As Button
     Friend WithEvents StopButton As Button
-    Friend WithEvents SaveButton As Button
     Friend WithEvents GroupBox1 As GroupBox
     Friend WithEvents LogPictureBox As PictureBox
     Friend WithEvents SerialPort As IO.Ports.SerialPort
@@ -280,13 +284,14 @@ Partial Class DataLogging
     Friend WithEvents ToolTip As ToolTip
     Friend WithEvents MenuStrip1 As MenuStrip
     Friend WithEvents FileToolStripMenuItem As ToolStripMenuItem
-    Friend WithEvents SaveToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents OpenFileToolStripMenuItem As ToolStripMenuItem
-    Friend WithEvents SettingsToolStripMenuItem As ToolStripMenuItem
     Friend WithEvents FileStatusLabel As Label
     Friend WithEvents GroupBox2 As GroupBox
     Friend WithEvents CurrentSampleRateLabel As Label
     Friend WithEvents ComButton As Button
     Friend WithEvents PortComboBox As ComboBox
     Friend WithEvents Timer2 As Timer
+    Friend WithEvents RadioButton30Seconds As RadioButton
+    Friend WithEvents AllDataRadioButton As RadioButton
+    Friend WithEvents OpenFileDialog As OpenFileDialog
 End Class
